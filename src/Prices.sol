@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.13;
 
-import "../interfaces/IOffchainOracle.sol";
-import "../interfaces/IERC20.sol";
+import "./interfaces/IOffchainOracle.sol";
+import "./interfaces/IERC20.sol";
 
 /// @title Prices
 /// @notice A wrapper contract for OffchainOracle.
