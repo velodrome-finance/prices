@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.13;
 
-import "../interfaces/IOffchainOracle.sol";
-import "../interfaces/IERC20.sol";
+import "./interfaces/IOffchainOracle.sol";
+import "./interfaces/IERC20.sol";
 
 /// @title Prices
 /// @notice A wrapper contract for OffchainOracle.
@@ -117,19 +117,30 @@ contract Prices {
         thresholdFilter = _thresholdFilter;
     }
 
-    /// @notice Fetches and records prices for a list of tokens.
+    /// @notice Fetches prices for a list of tokens.
+    /// @dev Only callable by owners and keepers.
+    /// @param _tokens The tokens to fetch prices for.
+    /// @return The fetched prices for the tokens.
+    function fetchPrices(IERC20[] calldata _tokens) public view returns (uint256[] memory prices) {
+        _onlyOwnerOrKeeper();
+        prices = oracle.getManyRatesWithCustomConnectors(_tokens, IERC20(stableToken), false, connectors, thresholdFilter);
+    }
+
+    /// @notice Records prices for a list of tokens.
     /// @dev Only callable by owners and keepers.
     /// @dev Emits a Price event and records it in storage.
-    /// @param _tokens The tokens to fetch prices for.
-    function fetchPrices(IERC20[] calldata _tokens) public {
-        require(owners[msg.sender] || keepers[msg.sender]);
-
-        uint256[] memory prices =
-            oracle.getManyRatesWithCustomConnectors(_tokens, IERC20(stableToken), false, connectors, thresholdFilter);
-
+    /// @param _tokens The tokens to store prices for.
+    /// @param _prices The prices to store for the tokens.
+    function storePrices(IERC20[] calldata _tokens, uint256[] calldata _prices) public {
+        _onlyOwnerOrKeeper();
+        address token;
+        uint256 price;
+        uint256 hourTimestamp = (block.timestamp / 1 hours) * 1 hours;
         for (uint i = 0; i < _tokens.length; i++) {
-            emit Price(address(_tokens[i]), prices[i]);
-            historicalPrices[address(_tokens[i])][((block.timestamp / 1 hours) * 1 hours)] = prices[i];
+            token = address(_tokens[i]);
+            price = _prices[i];
+            historicalPrices[token][hourTimestamp] = price;
+            emit Price(token, price);
         }
     }
 
@@ -145,4 +156,8 @@ contract Prices {
         require(owners[msg.sender]);
     }
 
+    /// @notice Enforces that the caller is an owner or a keeper.
+    function _onlyOwnerOrKeeper() internal view {
+        require(owners[msg.sender] || keepers[msg.sender]);
+    }
 }
