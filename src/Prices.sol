@@ -151,6 +151,20 @@ contract Prices {
         return historicalPrices[_token][((_timestamp / 1 hours) * 1 hours)];
     }
 
+    /// @notice Returns the most recent historical prices for multiple tokens based on given timestamps.
+    /// @param entries Tuples containing token addresses and timestamps to fetch the price for.
+    /// @return prices The historial prices corresponding to the input entries.
+    function latestMany(tuple(address, uint256)[] memory entries) public view returns (uint256[] memory) {
+        uint256[] memory prices = new uint256[](entries.length);
+        for (uint256 i = 0; i < entries.length; i++) {
+            address token = entries[i][0];
+            uint256 timestamp = entries[i][1];
+            prices[i] = historicalPrices[token][((timestamp / 1 hours) * 1 hours)];
+        }
+
+        return prices;
+    }
+
     /// @notice Enforces that the caller is an owner.
     function _onlyOwner() internal view {
         require(owners[msg.sender]);
