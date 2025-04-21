@@ -18,6 +18,11 @@ contract Prices {
     uint256 public timeWindow;
     mapping(address => mapping(uint256 => uint256)) public historicalPrices;
 
+    struct Entry {
+        address token;
+        uint256 timestamp;
+    }
+
     /// @notice Emitted when a price for a token is fetched.
     /// @param token The address of the token.
     /// @param price The fetched price of the token.
@@ -166,13 +171,13 @@ contract Prices {
     }
 
     /// @notice Returns the most recent historical prices for multiple tokens based on given timestamps.
-    /// @param entries Tuples containing token addresses and timestamps to fetch the price for.
+    /// @param entries Structs containing token addresses and timestamps to fetch the price for.
     /// @return prices The historial prices corresponding to the input entries.
-    function latestMany(tuple(address, uint256)[] memory entries) public view returns (uint256[] memory) {
+    function latestMany(Entry[] calldata entries) public view returns (uint256[] memory) {
         uint256[] memory prices = new uint256[](entries.length);
         for (uint256 i = 0; i < entries.length; i++) {
-            address token = entries[i][0];
-            uint256 timestamp = entries[i][1];
+            address token = entries[i].token;
+            uint256 timestamp = entries[i].timestamp;
             prices[i] = historicalPrices[token][((timestamp / timeWindow) * timeWindow)];
         }
 
