@@ -15,12 +15,22 @@ contract Prices {
     IERC20[] public connectors;
     address public stableToken;
     uint256 public thresholdFilter;
+    uint256 public timeWindow;
     mapping(address => mapping(uint256 => uint256)) public historicalPrices;
+
+    struct Entry {
+        address token;
+        uint256 timestamp;
+    }
 
     /// @notice Emitted when a price for a token is fetched.
     /// @param token The address of the token.
     /// @param price The fetched price of the token.
     event Price(address indexed token, uint256 price);
+
+    /// @notice Emitted when a new time window for pricing is set.
+    /// @param timeWindow The new time window.
+    event TimeWindowSet(uint256 timeWindow);
     
     constructor(address _owner, IOffchainOracle _oracle, uint256 _thresholdFilter) {
         owners[_owner] = true;
@@ -117,6 +127,15 @@ contract Prices {
         thresholdFilter = _thresholdFilter;
     }
 
+    /// @notice Sets a new time window for posting prices.
+    /// @dev Can only be called by an owner.
+    /// @param _timeWindow The new time window.
+    function setTimeWindow(uint256 _timeWindow) public {
+        _onlyOwner();
+        timeWindow = _timeWindow;
+        emit TimeWindowSet(timeWindow);
+    }
+
     /// @notice Fetches prices for a list of tokens.
     /// @dev Only callable by owners and keepers.
     /// @param _tokens The tokens to fetch prices for.
@@ -135,11 +154,11 @@ contract Prices {
         _onlyOwnerOrKeeper();
         address token;
         uint256 price;
-        uint256 hourTimestamp = (block.timestamp / 1 hours) * 1 hours;
+        uint256 latestTimestamp = (block.timestamp / timeWindow) * timeWindow;
         for (uint i = 0; i < _tokens.length; i++) {
             token = address(_tokens[i]);
             price = _prices[i];
-            historicalPrices[token][hourTimestamp] = price;
+            historicalPrices[token][latestTimestamp] = price;
             emit Price(token, price);
         }
     }
@@ -148,18 +167,18 @@ contract Prices {
     /// @param _token The token to return the price for.
     /// @param _timestamp The time to return the price at.
     function latest(address _token, uint256 _timestamp) public view returns (uint256) {
-        return historicalPrices[_token][((_timestamp / 1 hours) * 1 hours)];
+        return historicalPrices[_token][((_timestamp / timeWindow) * timeWindow)];
     }
 
     /// @notice Returns the most recent historical prices for multiple tokens based on given timestamps.
-    /// @param entries Tuples containing token addresses and timestamps to fetch the price for.
+    /// @param entries Structs containing token addresses and timestamps to fetch the price for.
     /// @return prices The historial prices corresponding to the input entries.
-    function latestMany(tuple(address, uint256)[] memory entries) public view returns (uint256[] memory) {
+    function latestMany(Entry[] calldata entries) public view returns (uint256[] memory) {
         uint256[] memory prices = new uint256[](entries.length);
         for (uint256 i = 0; i < entries.length; i++) {
-            address token = entries[i][0];
-            uint256 timestamp = entries[i][1];
-            prices[i] = historicalPrices[token][((timestamp / 1 hours) * 1 hours)];
+            address token = entries[i].token;
+            uint256 timestamp = entries[i].timestamp;
+            prices[i] = historicalPrices[token][((timestamp / timeWindow) * timeWindow)];
         }
 
         return prices;
