@@ -137,11 +137,9 @@ contract Prices {
     }
 
     /// @notice Fetches prices for a list of tokens.
-    /// @dev Only callable by owners and keepers.
     /// @param _tokens The tokens to fetch prices for.
     /// @return prices The fetched prices for the tokens.
     function fetchPrices(IERC20[] calldata _tokens) public view returns (uint256[] memory prices) {
-        _onlyOwnerOrKeeper();
         prices = oracle.getManyRatesWithCustomConnectors(_tokens, IERC20(stableToken), false, connectors, thresholdFilter);
     }
 
