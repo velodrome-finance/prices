@@ -136,11 +136,31 @@ contract Prices {
         emit TimeWindowSet(timeWindow);
     }
 
+    /// @notice Fetches the price for a token.
+    /// @param _token The token to fetch the price for.
+    /// @return price The fetched price for the token.
+    function fetchPrice(IERC20 _token) public view returns (uint256 price) {
+        price = oracle.getRateWithCustomConnectors(_token, IERC20(stableToken), false, connectors, thresholdFilter);
+    }
+
     /// @notice Fetches prices for a list of tokens.
     /// @param _tokens The tokens to fetch prices for.
     /// @return prices The fetched prices for the tokens.
-    function fetchPrices(IERC20[] calldata _tokens) public view returns (uint256[] memory prices) {
+    function fetchManyPrices(IERC20[] calldata _tokens) public view returns (uint256[] memory prices) {
         prices = oracle.getManyRatesWithCustomConnectors(_tokens, IERC20(stableToken), false, connectors, thresholdFilter);
+    }
+
+    /// @notice Records the price for a token.
+    /// @dev Only callable by owners and keepers.
+    /// @dev Emits a Price event and records it in storage.
+    /// @param _token The token to store the price for.
+    /// @param _price The price to store for the token.
+    function storePrice(IERC20 _token, uint256 _price) public {
+        _onlyOwnerOrKeeper();
+        address token = address(_token);
+        uint256 latestTimestamp = (block.timestamp / timeWindow) * timeWindow;
+        historicalPrices[token][latestTimestamp] = _price;
+        emit Price(token, _price);
     }
 
     /// @notice Records prices for a list of tokens.
@@ -148,7 +168,7 @@ contract Prices {
     /// @dev Emits a Price event and records it in storage.
     /// @param _tokens The tokens to store prices for.
     /// @param _prices The prices to store for the tokens.
-    function storePrices(IERC20[] calldata _tokens, uint256[] calldata _prices) public {
+    function storeManyPrices(IERC20[] calldata _tokens, uint256[] calldata _prices) public {
         _onlyOwnerOrKeeper();
         address token;
         uint256 price;
