@@ -158,7 +158,8 @@ contract Prices {
     /// @param _token The token to store the price for.
     /// @param _price The price to store for the token.
     function storePrice(address _token, uint256 _price) public onlyOwnerOrKeeper {
-        historicalPrices[_token][(block.timestamp / timeWindow) * timeWindow] = _price;
+        uint256 _timeWindow = timeWindow;
+        historicalPrices[_token][(block.timestamp / _timeWindow) * _timeWindow] = _price;
         emit Price(_token, _price);
     }
 
@@ -170,7 +171,8 @@ contract Prices {
     function storeManyPrices(address[] calldata _tokens, uint256[] calldata _prices) public onlyOwnerOrKeeper {
         address token;
         uint256 price;
-        uint256 latestTimestamp = (block.timestamp / timeWindow) * timeWindow;
+        uint256 _timeWindow = timeWindow;
+        uint256 latestTimestamp = (block.timestamp / _timeWindow) * _timeWindow;
         for (uint i = 0; i < _tokens.length; i++) {
             token = _tokens[i];
             price = _prices[i];
@@ -183,18 +185,20 @@ contract Prices {
     /// @param _token The token to return the price for.
     /// @param _timestamp The time to return the price at.
     function latest(address _token, uint256 _timestamp) public view returns (uint256) {
-        return historicalPrices[_token][((_timestamp / timeWindow) * timeWindow)];
+        uint256 _timeWindow = timeWindow;
+        return historicalPrices[_token][((_timestamp / _timeWindow) * _timeWindow)];
     }
 
     /// @notice Returns the most recent historical prices for multiple tokens based on given timestamps.
     /// @param entries Structs containing token addresses and timestamps to fetch the price for.
     /// @return prices The historial prices corresponding to the input entries.
     function latestMany(Entry[] calldata entries) public view returns (uint256[] memory) {
+        uint256 _timeWindow = timeWindow;
         uint256[] memory prices = new uint256[](entries.length);
         for (uint256 i = 0; i < entries.length; i++) {
             address token = entries[i].token;
             uint256 timestamp = entries[i].timestamp;
-            prices[i] = historicalPrices[token][((timestamp / timeWindow) * timeWindow)];
+            prices[i] = historicalPrices[token][((timestamp / _timeWindow) * _timeWindow)];
         }
 
         return prices;
