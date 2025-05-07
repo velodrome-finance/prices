@@ -155,12 +155,10 @@ contract Prices {
     /// @dev Emits a Price event and records it in storage.
     /// @param _token The token to store the price for.
     /// @param _price The price to store for the token.
-    function storePrice(IERC20 _token, uint256 _price) public {
+    function storePrice(address _token, uint256 _price) public {
         _onlyOwnerOrKeeper();
-        address token = address(_token);
-        uint256 latestTimestamp = (block.timestamp / timeWindow) * timeWindow;
-        historicalPrices[token][latestTimestamp] = _price;
-        emit Price(token, _price);
+        historicalPrices[_token][(block.timestamp / timeWindow) * timeWindow] = _price;
+        emit Price(_token, _price);
     }
 
     /// @notice Records prices for a list of tokens.
