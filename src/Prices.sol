@@ -38,19 +38,29 @@ contract Prices {
         thresholdFilter = _thresholdFilter;
     }
 
+    /// @notice Modifier that ensures the caller is an owner.
+    modifier onlyOwner() {
+        require(owners[msg.sender]);
+        _;
+    }
+
+    /// @notice Modifier that ensures the caller is an owner or a keeper.
+    modifier onlyOwnerOrKeeper() {
+        require(owners[msg.sender] || keepers[msg.sender]);
+        _;
+    }
+
     /// @notice Adds an owner to the owners set.
     /// @dev Can only be called by an owner.
     /// @param _owner The address to be added.
-    function addOwner(address _owner) public {
-        _onlyOwner();
+    function addOwner(address _owner) public onlyOwner {
         owners[_owner] = true;
     }
 
     /// @notice Removes an owner from the owners set.
     /// @dev Can only be called by an owner.
     /// @param _owner The address to be added.
-    function removeOwner(address _owner) public {
-        _onlyOwner();
+    function removeOwner(address _owner) public onlyOwner {
         require(msg.sender != _owner, "Owner cannot remove themself");
         owners[_owner] = false;
     }
@@ -58,32 +68,28 @@ contract Prices {
     /// @notice Adds a keeper to the keepers set.
     /// @dev Can only be called by an owner.
     /// @param _keeper The address to be added.
-    function addKeeper(address _keeper) public {
-        _onlyOwner();
+    function addKeeper(address _keeper) public onlyOwner {
         keepers[_keeper] = true;
     }
 
     /// @notice Removes a keeper from the keepers set.
     /// @dev Can only be called by an owner.
     /// @param _keeper The address to be removed.
-    function removeKeeper(address _keeper) public {
-        _onlyOwner();
+    function removeKeeper(address _keeper) public onlyOwner {
         keepers[_keeper] = false;
     }
 
     /// @notice Sets a new oracle.
     /// @dev Can only be called by an owner.
     /// @param _oracle The address of the new oracle.
-    function setOracle(IOffchainOracle _oracle) public {
-        _onlyOwner();
+    function setOracle(IOffchainOracle _oracle) public onlyOwner {
         oracle = _oracle;
     }
 
     /// @notice Adds a connector token for pricing.
     /// @dev Can only be called by an owner.
     /// @param _token The token to be added.
-    function addConnector(address _token) public {
-        _onlyOwner();
+    function addConnector(address _token) public onlyOwner {
         bool isConnector = false;
         for (uint i = 0; i < connectors.length; i++) {
             if (address(connectors[i]) == _token) {
@@ -100,8 +106,7 @@ contract Prices {
     /// @notice Removes a connector token.
     /// @dev Can only be called by an owner.
     /// @param _token The token to be removed.
-    function removeConnector(address _token) public {
-        _onlyOwner();
+    function removeConnector(address _token) public onlyOwner {
         for (uint i = 0; i < connectors.length; i++) {
             if (address(connectors[i]) == _token) {
                 connectors[i] = connectors[connectors.length - 1];
@@ -114,24 +119,21 @@ contract Prices {
     /// @notice Sets a new stable token to price against.
     /// @dev Can only be called by an owner.
     /// @param _stableToken The address of the new stable token.
-    function setStableToken(address _stableToken) public {
-        _onlyOwner();
+    function setStableToken(address _stableToken) public onlyOwner {
         stableToken = _stableToken;
     }
 
     /// @notice Sets a new threshold filter for pricing.
     /// @dev Can only be called by an owner.
     /// @param _thresholdFilter The new threshold filter.
-    function setThresholdFilter(uint256 _thresholdFilter) public {
-        _onlyOwner();
+    function setThresholdFilter(uint256 _thresholdFilter) public onlyOwner {
         thresholdFilter = _thresholdFilter;
     }
 
     /// @notice Sets a new time window for posting prices.
     /// @dev Can only be called by an owner.
     /// @param _timeWindow The new time window.
-    function setTimeWindow(uint256 _timeWindow) public {
-        _onlyOwner();
+    function setTimeWindow(uint256 _timeWindow) public onlyOwner {
         timeWindow = _timeWindow;
         emit TimeWindowSet(timeWindow);
     }
@@ -155,8 +157,7 @@ contract Prices {
     /// @dev Emits a Price event and records it in storage.
     /// @param _token The token to store the price for.
     /// @param _price The price to store for the token.
-    function storePrice(address _token, uint256 _price) public {
-        _onlyOwnerOrKeeper();
+    function storePrice(address _token, uint256 _price) public onlyOwnerOrKeeper {
         historicalPrices[_token][(block.timestamp / timeWindow) * timeWindow] = _price;
         emit Price(_token, _price);
     }
@@ -166,8 +167,7 @@ contract Prices {
     /// @dev Emits a Price event and records it in storage.
     /// @param _tokens The tokens to store prices for.
     /// @param _prices The prices to store for the tokens.
-    function storeManyPrices(address[] calldata _tokens, uint256[] calldata _prices) public {
-        _onlyOwnerOrKeeper();
+    function storeManyPrices(address[] calldata _tokens, uint256[] calldata _prices) public onlyOwnerOrKeeper {
         address token;
         uint256 price;
         uint256 latestTimestamp = (block.timestamp / timeWindow) * timeWindow;
@@ -198,15 +198,5 @@ contract Prices {
         }
 
         return prices;
-    }
-
-    /// @notice Enforces that the caller is an owner.
-    function _onlyOwner() internal view {
-        require(owners[msg.sender]);
-    }
-
-    /// @notice Enforces that the caller is an owner or a keeper.
-    function _onlyOwnerOrKeeper() internal view {
-        require(owners[msg.sender] || keepers[msg.sender]);
     }
 }
