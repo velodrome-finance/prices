@@ -32,10 +32,11 @@ contract Prices {
     /// @param timeWindow The new time window.
     event TimeWindowSet(uint256 timeWindow);
     
-    constructor(address _owner, IOffchainOracle _oracle, uint256 _thresholdFilter) {
+    constructor(address _owner, IOffchainOracle _oracle, uint256 _thresholdFilter, uint256 _timeWindow) {
         owners[_owner] = true;
         oracle = _oracle;
         thresholdFilter = _thresholdFilter;
+        timeWindow = _timeWindow;
     }
 
     /// @notice Modifier that ensures the caller is an owner.
