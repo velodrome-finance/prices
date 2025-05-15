@@ -32,10 +32,11 @@ contract Prices {
     /// @param timeWindow The new time window.
     event TimeWindowSet(uint256 timeWindow);
     
-    constructor(address _owner, IOffchainOracle _oracle, uint256 _thresholdFilter) {
+    constructor(address _owner, IOffchainOracle _oracle, uint256 _thresholdFilter, uint256 _timeWindow) {
         owners[_owner] = true;
         oracle = _oracle;
         thresholdFilter = _thresholdFilter;
+        timeWindow = _timeWindow;
     }
 
     /// @notice Modifier that ensures the caller is an owner.
@@ -134,6 +135,7 @@ contract Prices {
     /// @dev Can only be called by an owner.
     /// @param _timeWindow The new time window.
     function setTimeWindow(uint256 _timeWindow) public onlyOwner {
+        require(_timeWindow > 0, "Time window must be greater than 0");
         timeWindow = _timeWindow;
         emit TimeWindowSet(timeWindow);
     }
@@ -159,7 +161,19 @@ contract Prices {
     /// @param _price The price to store for the token.
     function storePrice(address _token, uint256 _price) public onlyOwnerOrKeeper {
         uint256 _timeWindow = timeWindow;
-        historicalPrices[_token][(block.timestamp / _timeWindow) * _timeWindow] = _price;
+        uint256 timestamp = (block.timestamp / _timeWindow) * _timeWindow;
+        storePrice(_token, _price, timestamp);
+    }
+
+    /// @notice Records the price for a token with a specific timestamp.
+    /// @dev Only callable by owners and keepers.
+    /// @dev Emits a Price event and records it in storage.
+    /// @param _token The token to store the price for.
+    /// @param _price The price to store for the token.
+    /// @param _timestamp The timestamp to store the price at.
+    /// @dev The timestamp should be a multiple of the time window.
+    function storePrice(address _token, uint256 _price, uint256 _timestamp) public onlyOwnerOrKeeper {
+        historicalPrices[_token][_timestamp] = _price;
         emit Price(_token, _price);
     }
 
@@ -185,7 +199,14 @@ contract Prices {
     /// @param _token The token to return the price for.
     /// @param _timestamp The time to return the price at.
     function latest(address _token, uint256 _timestamp) public view returns (uint256) {
-        uint256 _timeWindow = timeWindow;
+        return latest(_token, _timestamp, timeWindow);
+    }
+
+    /// @notice Returns most recent historical price for a token based on given timestamp and time window.
+    /// @param _token The token to return the price for.
+    /// @param _timestamp The time to return the price at.
+    /// @param _timeWindow The time window to use for the timestamp.
+    function latest(address _token, uint256 _timestamp, uint256 _timeWindow) public view returns (uint256) {
         return historicalPrices[_token][((_timestamp / _timeWindow) * _timeWindow)];
     }
 
