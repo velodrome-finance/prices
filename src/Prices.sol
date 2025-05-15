@@ -183,25 +183,14 @@ contract Prices {
     /// @param _tokens The tokens to store prices for.
     /// @param _prices The prices to store for the tokens.
     function storeManyPrices(address[] calldata _tokens, uint256[] calldata _prices) public onlyOwnerOrKeeper {
-        uint256 _timeWindow = timeWindow;
-        uint256 timestamp = (block.timestamp / _timeWindow) * _timeWindow;
-        storeManyPrices(_tokens, _prices, timestamp);
-    }
-
-    /// @notice Records prices for a list of tokens with a specific timestamp.
-    /// @dev Only callable by owners and keepers.
-    /// @dev Emits a Price event and records it in storage.
-    /// @param _tokens The tokens to store prices for.
-    /// @param _prices The prices to store for the tokens.
-    /// @param _timestamp The timestamp to store the prices at.
-    /// @dev The timestamp should be a multiple of the time window.
-    function storeManyPrices(address[] calldata _tokens, uint256[] calldata _prices, uint256 _timestamp) public onlyOwnerOrKeeper {
         address token;
         uint256 price;
+        uint256 _timeWindow = timeWindow;
+        uint256 latestTimestamp = (block.timestamp / _timeWindow) * _timeWindow;
         for (uint i = 0; i < _tokens.length; i++) {
             token = _tokens[i];
             price = _prices[i];
-            historicalPrices[token][_timestamp] = price;
+            historicalPrices[token][latestTimestamp] = price;
             emit Price(token, price);
         }
     }
