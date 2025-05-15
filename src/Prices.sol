@@ -157,9 +157,10 @@ contract Prices {
     /// @dev Emits a Price event and records it in storage.
     /// @param _token The token to store the price for.
     /// @param _price The price to store for the token.
-    function storePrice(address _token, uint256 _price) public onlyOwnerOrKeeper {
-        uint256 _timeWindow = timeWindow;
-        historicalPrices[_token][(block.timestamp / _timeWindow) * _timeWindow] = _price;
+    /// @param _timestamp The timestamp to store the price at.
+    /// @dev The timestamp should be a multiple of the time window.
+    function storePrice(address _token, uint256 _price, uint256 _timestamp) public onlyOwnerOrKeeper {
+        historicalPrices[_token][_timestamp] = _price;
         emit Price(_token, _price);
     }
 
@@ -168,15 +169,15 @@ contract Prices {
     /// @dev Emits a Price event and records it in storage.
     /// @param _tokens The tokens to store prices for.
     /// @param _prices The prices to store for the tokens.
-    function storeManyPrices(address[] calldata _tokens, uint256[] calldata _prices) public onlyOwnerOrKeeper {
+    /// @param _timestamp The timestamp to store the prices at.
+    /// @dev The timestamp should be a multiple of the time window.
+    function storeManyPrices(address[] calldata _tokens, uint256[] calldata _prices, uint256 _timestamp) public onlyOwnerOrKeeper {
         address token;
         uint256 price;
-        uint256 _timeWindow = timeWindow;
-        uint256 latestTimestamp = (block.timestamp / _timeWindow) * _timeWindow;
         for (uint i = 0; i < _tokens.length; i++) {
             token = _tokens[i];
             price = _prices[i];
-            historicalPrices[token][latestTimestamp] = price;
+            historicalPrices[token][_timestamp] = price;
             emit Price(token, price);
         }
     }
@@ -184,21 +185,21 @@ contract Prices {
     /// @notice Returns most recent historical price for a token based on given timestamp.
     /// @param _token The token to return the price for.
     /// @param _timestamp The time to return the price at.
+    /// @dev The timestamp should be a multiple of the time window.
     function latest(address _token, uint256 _timestamp) public view returns (uint256) {
-        uint256 _timeWindow = timeWindow;
-        return historicalPrices[_token][((_timestamp / _timeWindow) * _timeWindow)];
+        return historicalPrices[_token][_timestamp];
     }
 
     /// @notice Returns the most recent historical prices for multiple tokens based on given timestamps.
     /// @param entries Structs containing token addresses and timestamps to fetch the price for.
+    /// @dev The timestamp should be a multiple of the time window.
     /// @return prices The historial prices corresponding to the input entries.
     function latestMany(Entry[] calldata entries) public view returns (uint256[] memory) {
-        uint256 _timeWindow = timeWindow;
         uint256[] memory prices = new uint256[](entries.length);
         for (uint256 i = 0; i < entries.length; i++) {
             address token = entries[i].token;
             uint256 timestamp = entries[i].timestamp;
-            prices[i] = historicalPrices[token][((timestamp / _timeWindow) * _timeWindow)];
+            prices[i] = historicalPrices[token][timestamp];
         }
 
         return prices;
