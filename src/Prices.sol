@@ -135,6 +135,7 @@ contract Prices {
     /// @dev Can only be called by an owner.
     /// @param _timeWindow The new time window.
     function setTimeWindow(uint256 _timeWindow) public onlyOwner {
+        require(_timeWindow > 0, "Time window must be greater than 0");
         timeWindow = _timeWindow;
         emit TimeWindowSet(timeWindow);
     }
